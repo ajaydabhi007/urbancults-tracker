@@ -1,6 +1,0 @@
-[build]
-  functions = "functions"
-  command   = "echo Deploying functions only"
-
-[functions]
-  node_bundler = "esbuild"
