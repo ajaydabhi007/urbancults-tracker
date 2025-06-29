@@ -13,7 +13,7 @@ export default async (request) => {
 
   // 2️⃣ call Delhivery Tracking API
   const apiRes = await fetch(
-    `https://track.delhivery.com/api/v1/packages/json/?tracking_numbers=${awb}`,
+    `https://track.delhivery.com/api/v1/packages/json/?waybill=${awb}`,,
     {
       headers: { Authorization: `Bearer ${process.env.DELHIVERY_TOKEN}` },
     }
