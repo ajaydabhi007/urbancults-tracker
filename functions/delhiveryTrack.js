@@ -1,27 +1,39 @@
-// /functions/delhiveryTrack.js
-// UrbanCults → Delhivery tracking proxy (Netlify Function)
+// Netlify Edge/Request style function — UrbanCults Delhivery proxy
+export default async (request) => {
+  // 1️⃣ grab ?awb= from the URL
+  const { searchParams } = new URL(request.url);
+  const awb = searchParams.get("awb");
 
-export default async (req, res) => {
-  const awb = req.query.awb;
-  if (!awb) return res.status(400).json({ error: "Missing AWB" });
-
-  // Call Delhivery’s public tracking endpoint
-  const r = await fetch(
-    `https://track.delhivery.com/api/v1/packages/json/?tracking_numbers=${awb}`,
-    { headers: { Authorization: `Bearer ${process.env.DELHIVERY_TOKEN}` } }
-  );
-
-  if (!r.ok) {
-    return res
-      .status(502)
-      .json({ error: "Delhivery responded with " + r.status });
+  if (!awb) {
+    return new Response(JSON.stringify({ error: "Missing AWB" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  const payload = await r.json();
+  // 2️⃣ call Delhivery Tracking API
+  const apiRes = await fetch(
+    `https://track.delhivery.com/api/v1/packages/json/?tracking_numbers=${awb}`,
+    {
+      headers: { Authorization: `Bearer ${process.env.DELHIVERY_TOKEN}` },
+    }
+  );
 
-  // Allow Shopify front-end domain to call this (CORS)
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (!apiRes.ok) {
+    return new Response(
+      JSON.stringify({ error: "Delhivery error", status: apiRes.status }),
+      { status: 502, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
-  return res.json(payload);
+  const data = await apiRes.json();
+
+  // 3️⃣ return JSON + basic CORS so Shopify can call it
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Content-Type": "application/json",
+    },
+  });
 };
